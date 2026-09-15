@@ -1,110 +1,75 @@
-# Описание проекта: 
-Проект включает ML модель для прогнозирования цен акций, а также возможность получения информации о компании, последних торгах, получении экспертных рекомендаций. Сейчас проект также содержит публичную базу данных со списком запросов.
+# stock-price-forecast-bot
 
-### Цель проекта: 
-Создание сервиса по предсказанию стоимости акций
+HSE course project (2023–2024). A Telegram bot that forecasts stock prices with an ML model (gradient boosting) and a DL model (LSTM), and also shows recent trading data, company information and analyst recommendations. The models run in a separate FastAPI service; user requests are logged to PostgreSQL.
 
-### Задачи проекта:
-1. Собрать данные и провести разведочный анализ данных;
-2. Выбрать данные и сгенерировать дополнительные экзогенные переменные;
-3. Протестировать различные ML и DL модели, выбрать оптимальные;
-4. Реализовать сервис для ML и DL прогнозирования;
-5. Разработать чат-бот в Телеграмм;
-6. Объединить сервис и чат-бот в единый продукт;
-7. Написать тесты и провести тестирование продукта.
+Author: Pavel Alekseev (Telegram @pavel0420). Curator: Tatiana Fofanova (@tfofanova).
 
-
-### Автор проекта
-
-| Имя | Телеграм | 
-|----------|----------|
-| Алексеев Павел | @pavel0420 |
-
-### Куратор
-
-| Имя | Телеграм | 
-|----------|----------|
-| Фофанова Татьяна | @tfofanova |
-
-
-## Организация проекта: 
-	├─ fastapi_app 				<- Директория приложения FastAPI (ML часть проекта)
-	│  ├─ Dockerfile
-	│  ├─ fastapi_app.py			<- Приложение FastAPI
-	│  ├─ model_data
-	│  │  ├─ GB_model.pkl			<- Предобученная модель Градиентного бустинга
-	│  │  └─ lambda_val.pkl			<- Параметр λ для трансформации Бокса-Кокса
-	│  ├─ requirements.txt
-	│  └─ test_fastapi_app.py  		<- Тестирование приложения FastAPI
-	│
-	├─ telegram_bot				<- Директория Telegram бота
-	│  ├─ Dockerfile
-	│  ├─ bot.py				<- Приложение FastAPI
-	│  ├─ requirements.txt
-	│  └─ test_bot.py			<- Тестирование Telegram бота
-	│
-	├─ docker-compose.yaml
-	│
-	├─ notebooks				<- Jupyter-ноутбуки
-	│  ├─ EDA.ipynb				<- Разведочный анализ данных
-	│  ├─ ML_model_analysis.ipynb		<- Обучение ML модели
-	│
-	├─ presentations
-	│  └─ ML_model_analysis.pdf		<- Обучение ML модели
-	│
-	└─ README.md				<- Описание проекта
-
-## Roadmap
-
-- [x] **Создание приложений**
-  - [x] Telegram бот
-  - [x] FastAPI приложение для ML модели
-  - [x] FastAPI приложение для DL модели
-
-- [x] **Обучение ML модели**
-  - [x] Загрузка данных
-  - [x] Предобработка данных
-  - [x] Генерация лаговых и иных признаков
-  - [x] Обучение и тюнинг модели Градиентного бустинга
-  - [x] Обучение и тюнинг модели Случайного леса
-  - [x] Сохранение итоговой ML модели
-
-- [x] **Обучение DL модели**
-  - [x] Загрузка данных
-  - [x] Предобработка данных
-  - [x] Генерация лаговых и иных признаков
-  - [x] Создание архитектуры нейронной сети
-  - [x] Компиляция модели с выбором функции потерь и оптимизатора
-  - [x] Обучение и тюнинг моделей
-  - [x] Сохранение итоговой DL модели
-
-- [x] **Создание сервисов**
-  - [x] Последние данные о торгах
-  - [x] Информация о компании
-  - [x] Экспертные рекомендации
-  - [x] ML предсказание стоимости акций
-  - [x] DL предсказание стоимости акций
-
-## Как запустить проект: 
-
-- Клонировать репозиторий:
-> git clone https://github.com/alekseevpavel04/project.git
-- Заходим в папку project:
-> cd project
-- Создаем файл окружения с указанием токена:
-> echo "TELEGRAM_TOKEN=YOUR_TG_TOKEN" > .env
-- Запускаем docker-compose:
-> docker-compose up
-
-## Тестирование: 
-- Приложение FastAPI_app:
-> Запустить "pytest" из папки FastAPI_app
-- Приложение Telegram_app:
-> Запустить "pytest -s" из папки Telegram_app
-
-	Важно 1: Тестирование Telegram_app запросит логин и код от тестового аккаунта (подойдет любой)
- 	Важно 2: Для тестирования Telegram_app необходимо сначала запустить проект целиком (docker-compose up)
-	Важно 3: Не забудьте создать виртуальное окружение и установить необходимые библиотеки
-
-## Пример работы бота Telegram
 ![example](https://github.com/alekseevpavel04/project/assets/48567496/62c323da-90a8-41ca-8704-83787ac4557f)
+
+## Features
+
+- `/predict_ml <TICKER>`: forecast with the pre-trained gradient boosting model
+- `/predict_dl <TICKER>`: forecast with the pre-trained LSTM model
+- `/last`, `/info`, `/recom`: latest trades, company information, analyst recommendations (via yfinance)
+- `/base`: request statistics stored in PostgreSQL
+- `/start`, `/help`
+
+## How it works
+
+- **Data:** daily prices downloaded with `yfinance`; Box-Cox transform (λ stored in `lambda_val.pkl`), lagged and rolling-window features, MinMax scaling.
+- **ML model:** gradient boosting (`GB_model.pkl`), selected in `notebooks/ML_model_analysis.ipynb`, where gradient boosting and random forest were trained and tuned.
+- **DL model:** PyTorch LSTM (5 layers, hidden size 64) in `trained_model_lstm.pth`, trained in `notebooks/DL_model_analysis.ipynb`.
+- **Services:** FastAPI app with `POST /predict_ml` and `POST /predict_dl`; aiogram 3 Telegram bot; PostgreSQL; all started with Docker Compose.
+
+## Tech stack
+
+Python, pandas, scikit-learn, LightGBM, PyTorch, yfinance, FastAPI, aiogram, SQLAlchemy, PostgreSQL, Docker Compose, pytest.
+
+## Project structure
+
+```
+├── fastapi_app/                 # FastAPI service with the models
+│   ├── Dockerfile
+│   ├── fastapi_app.py
+│   ├── model_data/
+│   │   ├── GB_model.pkl         # gradient boosting model
+│   │   ├── lambda_val.pkl       # Box-Cox lambda
+│   │   └── trained_model_lstm.pth  # LSTM weights
+│   ├── requirements.txt
+│   └── test_fastapi_app.py
+├── telegram_bot/                # Telegram bot
+│   ├── Dockerfile
+│   ├── bot.py
+│   ├── requirements.txt
+│   └── test_bot.py
+├── notebooks/
+│   ├── EDA.ipynb                # exploratory data analysis
+│   ├── ML_model_analysis.ipynb  # ML model training
+│   └── DL_model_analysis.ipynb  # LSTM training
+├── presentations/
+│   └── ML_model_analysis.pdf
+├── docker-compose.yaml
+└── LICENSE
+```
+
+## How to run
+
+```bash
+git clone https://github.com/alekseevpavel04/stock-price-forecast-bot.git
+cd stock-price-forecast-bot
+echo "TELEGRAM_TOKEN=YOUR_TG_TOKEN" > .env
+docker-compose up
+```
+
+## Tests
+
+- FastAPI service: run `pytest` from `fastapi_app/`.
+- Telegram bot: run `pytest -s` from `telegram_bot/`. The bot tests log in to a Telegram test account (they ask for a login and code) and require the whole project to be running (`docker-compose up`). Install the requirements in a virtual environment first.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+## Кратко по-русски
+
+Учебный проект ВШЭ (2023–2024): Telegram-бот для прогнозирования цен акций. Прогноз строится ML-моделью (градиентный бустинг) или DL-моделью (LSTM) в отдельном FastAPI-сервисе. Бот также показывает последние торги, информацию о компании и рекомендации аналитиков. Запуск: `docker-compose up` с `TELEGRAM_TOKEN` в `.env`.
